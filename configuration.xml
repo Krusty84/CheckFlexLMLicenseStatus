@@ -1,0 +1,9 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<CheckFlexLMLicenseStatus>
+	<licServerPort>28000</licServerPort>
+	<licServerName>DR41ZZQ</licServerName>
+	<lmutilPath>C:\\Siemens\\PLMLicenseServer\\lmutil.exe</lmutilPath>
+	<checkingFeature>teamcener_author</checkingFeature>
+	<dangeousDaysBeforeExpire>15</dangeousDaysBeforeExpire>
+	<httpListeningPort>5555</httpListeningPort>
+</CheckFlexLMLicenseStatus>
