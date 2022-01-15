@@ -1,6 +1,12 @@
-﻿using System.Reflection;
-using System.Runtime.CompilerServices;
+﻿/*
+AssemblyInfo.cs
+16.01.2022 1:35:03
+Alexey Sedoykin
+*/
+
+using System.Reflection;
 using System.Runtime.InteropServices;
+
 
 // General Information about an assembly is controlled through the following
 // set of attributes. Change these attribute values to modify the information
