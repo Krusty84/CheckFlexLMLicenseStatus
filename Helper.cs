@@ -21,4 +21,14 @@ namespace CheckFlexLMLicenseStatus
         /// </summary>
         public string expiredDate { get; set; }
     }
+
+    public class CheckLicenseExpiredPayload
+    {
+        public string lmutilPath { get; set; }
+        public string licServerPort { get; set; }
+        public string licServerName { get; set; }
+        public string licFeatureToCheck { get; set; }
+        public int dangeousDaysBeforeExpire { get; set; }
+        public string licVendorName { get; set; }
+    }
 }

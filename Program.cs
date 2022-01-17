@@ -6,13 +6,12 @@ Alexey Sedoykin
 
 namespace CheckFlexLMLicenseStatus
 {
+    using Newtonsoft.Json;
     using System;
     using System.Diagnostics;
     using System.IO;
-    using System.Linq;
     using System.Web.Http;
     using System.Web.Http.SelfHost;
-    using System.Xml.Linq;
     using Topshelf;
 
     /// <summary>
@@ -22,34 +21,29 @@ namespace CheckFlexLMLicenseStatus
     public class LicenseStatusController : ApiController
     {
         //http://127.0.0.1:5555/api/licensestatus/CheckLicenseExpired
-        /// <summary>
-        /// The CheckLicenseExpired.
-        /// </summary>
-        /// <returns>The <see cref="object"/>.</returns>
+        /* plus this body:
+                "{\n   \"licVendorName\":\"ugslmd\",\n   \"licServerPort\":\"28000\",\n   \"licServerName\":\"localhost\",\n
+        \"licFeatureToCheck\":\"teamcenter_author\",\n   \"expireDateRaw\":15,\n
+        \"lmutilPath\":\"C:\\\\Siemens\\\\PLMLicenseServer\\\\lmutil.exe\"\n}"
+        */
+
         [HttpGet]
-        public object CheckLicenseExpired()
+        public object CheckLicenseExpired([FromBody] string payload)
         {
-            string lmutilPath;
-            string licServerPort;
-            string licServerName;
-            string licFeatureToCheck;
-            string expireDateRaw;
-            string licVendorName;
-            int dangeousDaysBeforeExpire;
+            CheckLicenseExpiredPayload response = JsonConvert.DeserializeObject<CheckLicenseExpiredPayload>(payload);
+            Console.WriteLine("Lic Vendor Name: " + response.licVendorName);
+            Console.WriteLine("Lic Server Port: " + response.licServerPort);
+            Console.WriteLine("Lic Lmutil Path: " + response.lmutilPath);
+            Console.WriteLine("Lic Server Name: " + response.licServerName);
+            Console.WriteLine("Lic Feature Check: " + response.licFeatureToCheck);
+            Console.WriteLine("Lic Expire Date: " + response.dangeousDaysBeforeExpire.ToString());
             //
             var licStatusResp = new LicenseStatusResponce();
-            //
+            string expireDateRaw;
             try
             {
-                XDocument xmlConfigFile = XDocument.Load("configuration.xml");
-                lmutilPath = xmlConfigFile.Descendants("lmutilPath").First().Value;
-                licServerPort = xmlConfigFile.Descendants("licServerPort").First().Value;
-                licServerName = xmlConfigFile.Descendants("licServerName").First().Value;
-                licFeatureToCheck = xmlConfigFile.Descendants("checkingFeature").First().Value;
-                licVendorName = xmlConfigFile.Descendants("licVendorName").First().Value;
-                dangeousDaysBeforeExpire = Int16.Parse(xmlConfigFile.Descendants("dangeousDaysBeforeExpire").First().Value);
                 //проверяем запущен ли сервер лицензии
-                Process[] pname = Process.GetProcessesByName(licVendorName);
+                Process[] pname = Process.GetProcessesByName(response.licVendorName);
                 if (pname.Length == 0)
                 {
                     licStatusResp.licenseStatus = "FlexLM, Vendor is missing or didn't start";
@@ -57,8 +51,8 @@ namespace CheckFlexLMLicenseStatus
                 }
                 else
                 {
-                    string args = String.Format("lmstat -i -c {0} -f {1}", (licServerPort + "@" + licServerName), licFeatureToCheck);
-                    ProcessStartInfo pcStartInfo = new ProcessStartInfo(lmutilPath, args);
+                    string args = String.Format("lmstat -i -c {0} -f {1}", (response.licServerPort + "@" + response.licServerName), response.licFeatureToCheck);
+                    ProcessStartInfo pcStartInfo = new ProcessStartInfo(response.lmutilPath, args);
                     pcStartInfo.WindowStyle = ProcessWindowStyle.Hidden;
                     pcStartInfo.UseShellExecute = false;
                     pcStartInfo.RedirectStandardOutput = true;
@@ -95,9 +89,9 @@ namespace CheckFlexLMLicenseStatus
                         licStatusResp.licenseStatus = "License was expired";
                         return Json(licStatusResp);
                     }
-                    else if (valueOfWorkinTime.TotalDays <= dangeousDaysBeforeExpire)
+                    else if (valueOfWorkinTime.TotalDays <= response.dangeousDaysBeforeExpire)
                     {
-                        Console.WriteLine("License will expire in less than " + dangeousDaysBeforeExpire + " days!" + expiredDate.ToString());
+                        Console.WriteLine("License will expire in less than " + response.dangeousDaysBeforeExpire + " days!" + expiredDate.ToString());
                         licStatusResp.expiredDate = expiredDate.ToString();
                         licStatusResp.licenseStatus = "License will expire in less than two weeks!";
                         return Json(licStatusResp);
@@ -115,7 +109,7 @@ namespace CheckFlexLMLicenseStatus
             {
                 Console.WriteLine("Something was wrong: " + ex.ToString());
             }
-            return null;
+            return payload;
         }
     }
 
