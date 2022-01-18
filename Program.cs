@@ -10,8 +10,10 @@ namespace CheckFlexLMLicenseStatus
     using System;
     using System.Diagnostics;
     using System.IO;
+    using System.Linq;
     using System.Web.Http;
     using System.Web.Http.SelfHost;
+    using System.Xml.Linq;
     using Topshelf;
 
     /// <summary>
@@ -84,23 +86,23 @@ namespace CheckFlexLMLicenseStatus
                     Console.WriteLine("Different date: " + valueOfWorkinTime.TotalDays.ToString());
                     if (valueOfWorkinTime.TotalDays < 0)
                     {
-                        Console.WriteLine("License was expired! " + expiredDate.ToString());
+                        Console.WriteLine("Expired! " + expiredDate.ToString());
                         licStatusResp.expiredDate = expiredDate.ToString();
-                        licStatusResp.licenseStatus = "License was expired";
+                        licStatusResp.licenseStatus = "Expired!";
                         return Json(licStatusResp);
                     }
                     else if (valueOfWorkinTime.TotalDays <= response.dangeousDaysBeforeExpire)
                     {
                         Console.WriteLine("License will expire in less than " + response.dangeousDaysBeforeExpire + " days!" + expiredDate.ToString());
                         licStatusResp.expiredDate = expiredDate.ToString();
-                        licStatusResp.licenseStatus = "License will expire in less than two weeks!";
+                        licStatusResp.licenseStatus = "License will expire in less than " + response.dangeousDaysBeforeExpire + " days!" + expiredDate.ToString();
                         return Json(licStatusResp);
                     }
                     else if (valueOfWorkinTime.TotalDays > 0)
                     {
-                        Console.WriteLine("License is okay! End of: " + expiredDate.ToString());
+                        Console.WriteLine("Ok! End of: " + expiredDate.ToString());
                         licStatusResp.expiredDate = expiredDate.ToString();
-                        licStatusResp.licenseStatus = "License is okay!";
+                        licStatusResp.licenseStatus = "Ok! End of: " + expiredDate.ToString();
                         return Json(licStatusResp);
                     }
                 }
@@ -169,9 +171,9 @@ namespace CheckFlexLMLicenseStatus
         /// <summary>
         /// Initializes a new instance of the <see cref="CheckFlexLMLicenseStatusService"/> class.
         /// </summary>
-        public CheckFlexLMLicenseStatusService()
+        public CheckFlexLMLicenseStatusService(string listeningPort)
         {
-            var selfHostConfiguraiton = new HttpSelfHostConfiguration("http://127.0.0.1:" + "5555");
+            var selfHostConfiguraiton = new HttpSelfHostConfiguration("http://127.0.0.1:" + listeningPort);
             selfHostConfiguraiton.Routes.MapHttpRoute(
                 name: "DefaultApiRoute",
                 routeTemplate: "api/{controller}/{action}/{id}",
@@ -210,11 +212,14 @@ namespace CheckFlexLMLicenseStatus
         /// <param name="args">The args<see cref="string[]"/>.</param>
         private static void Main(string[] args)
         {
+
+            XDocument xmlConfigFile = XDocument.Load("configuration.xml");
+            string httpListeningPort = xmlConfigFile.Descendants("httpListeningPort").First().Value;
             HostFactory.Run(x =>
                 {
                     x.Service<CheckFlexLMLicenseStatusService>(s =>
                     {
-                        s.ConstructUsing(name => new CheckFlexLMLicenseStatusService());
+                        s.ConstructUsing(name => new CheckFlexLMLicenseStatusService(httpListeningPort));
                         s.WhenStarted(svc => svc.Start());
                         s.WhenStopped(svc => svc.Stop());
                     });
